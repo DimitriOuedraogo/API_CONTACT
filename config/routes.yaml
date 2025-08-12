@@ -1,0 +1,12 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+# Route JWT pour l'authentification API
+api_login_check:
+    path: /api/login_check
+    methods: ['POST']
+
+
+
