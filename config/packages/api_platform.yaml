@@ -1,0 +1,14 @@
+api_platform:
+    title: Contact API
+    description: API for managing contacts
+    version: 1.0.0
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    swagger:
+        api_keys:
+            bearerAuth:
+                name: Authorization
+                type: header
+                
