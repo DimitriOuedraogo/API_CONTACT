@@ -1,41 +1,43 @@
-# Étape 1 : Utiliser l'image PHP avec Apache
+# Étape 1 : image PHP avec Apache
 FROM php:8.2-apache
 
-# Installer les dépendances nécessaires
+# Installer les dépendances système
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libicu-dev \
     libzip-dev \
-    && docker-php-ext-install intl pdo pdo_mysql zip \
-    && docker-php-ext-enable intl pdo_mysql zip
+    libpq-dev \
+    && docker-php-ext-install intl zip pdo_pgsql pgsql \
+    && docker-php-ext-enable intl zip pdo_pgsql pgsql \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Installer Composer
+# Copier Composer depuis l'image officielle
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Définir le dossier de travail
+# Définir le répertoire de travail
 WORKDIR /var/www/html
 
-# Copier les fichiers du projet
+# Copier tout le code
 COPY . .
 
-# Config Git pour éviter les warnings
+# Configurer Git pour Docker
 RUN git config --global --add safe.directory /var/www/html
 
-# Installer les dépendances PHP sans scripts
+# Installer les dépendances PHP sans les dev
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Créer le dossier var et donner les permissions
-RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html
+# Créer le dossier var et donner les permissions à Apache
+RUN mkdir -p var && chown -R www-data:www-data /var/www/html
 
-# Copier la configuration Apache personnalisée
+# Copier la config Apache si tu en as une personnalisée
 COPY ./docker/apache/vhost.conf /etc/apache2/sites-available/000-default.conf
 
-# Activer le module Apache rewrite
+# Activer mod_rewrite pour Symfony
 RUN a2enmod rewrite
 
-# Exposer le port
+# Exposer le port Apache par défaut
 EXPOSE 80
 
-# Lancer Apache
+# Commande par défaut pour démarrer Apache
 CMD ["apache2-foreground"]
