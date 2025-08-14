@@ -32,11 +32,13 @@ RUN git config --global --add safe.directory /var/www/html
 # Installer les dépendances PHP sans les dev
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Créer les dossiers et donner les permissions à Apache
-RUN mkdir -p var && chown -R www-data:www-data var vendor
+# Créer les dossiers avec les bonnes permissions
+RUN mkdir -p var/cache var/log public && \
+    chown -R www-data:www-data var vendor public && \
+    chmod -R 775 var
 
 # Créer un script de démarrage avec migrations
-RUN echo '#!/bin/bash\necho "🚀 Démarrage..."\nphp bin/console doctrine:migrations:migrate --no-interaction || true\necho "🌐 Démarrage Apache..."\nexec apache2-foreground' > /start.sh
+RUN echo '#!/bin/bash\necho "🚀 Démarrage..."\n# Fixer les permissions\nchown -R www-data:www-data /var/www/html/var/\nchmod -R 775 /var/www/html/var/\n# Migrations\nphp bin/console doctrine:migrations:migrate --no-interaction || true\necho "🌐 Démarrage Apache..."\nexec apache2-foreground' > /start.sh
 RUN chmod +x /start.sh
 
 # Copier la config Apache personnalisée
