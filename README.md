@@ -17,6 +17,10 @@ Rôles utilisateur pour gérer les accès (ROLE_USER, ROLE_ADMIN)
 Technologies utilisées
 Symfony 6+
 
+Apercu 
+<img width="1340" height="639" alt="api_contact" src="https://github.com/user-attachments/assets/755778c4-5392-4c8d-b8de-608f169b046b" />
+
+
 API Platform
 
 Doctrine ORM
