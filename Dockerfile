@@ -39,9 +39,6 @@ RUN chmod +x /start.sh
 # Créer les dossiers et donner les permissions à Apache
 RUN mkdir -p var public && chown -R www-data:www-data var vendor public
 
-# Vérifier la structure des dossiers
-RUN ls -la /var/www/html/
-
 # Créer les dossiers et donner les permissions à Apache
 RUN mkdir -p var public && chown -R www-data:www-data var vendor public
 
@@ -54,7 +51,8 @@ COPY ./docker/apache/vhost.conf /etc/apache2/sites-available/000-default.conf
 # Activer mod_rewrite pour Symfony
 RUN a2enmod rewrite
 
-# Commande par défaut pour démarrer Apache avec migrations
-COPY ./docker/start.sh /start.sh
-RUN chmod +x /start.sh
-CMD ["/start.sh"]
+# Exposer le port Apache par défaut
+EXPOSE 80
+
+# Commande par défaut pour démarrer Apache
+CMD ["apache2-foreground"]
