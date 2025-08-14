@@ -4,18 +4,18 @@ FROM php:8.2-apache
 # Autoriser Composer à tourner en root
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Installer les dépendances système + extensions PHP pour MySQL
+# Installer les dépendances système + extensions PHP
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libicu-dev \
     libzip-dev \
-    default-mysql-client \
-    && docker-php-ext-install intl zip pdo_mysql mysqli \
+    libpq-dev \
+    && docker-php-ext-install intl zip pdo_pgsql pgsql \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Vérifier que les extensions MySQL sont bien installées
-RUN php -m | grep -E "(pdo_mysql|mysqli)" && echo "Extensions MySQL OK" || echo "Extensions MySQL MANQUANTES"
+# Vérifier que les extensions PostgreSQL sont bien installées
+RUN php -m | grep -E "(pdo_pgsql|pgsql)" && echo "Extensions PostgreSQL OK" || echo "Extensions PostgreSQL MANQUANTES"
 
 # Copier Composer depuis l'image officielle
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -32,18 +32,12 @@ RUN git config --global --add safe.directory /var/www/html
 # Installer les dépendances PHP sans les dev
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Script de démarrage qui fera les migrations
-COPY ./docker/start.sh /start.sh
+# Créer les dossiers et donner les permissions à Apache
+RUN mkdir -p var && chown -R www-data:www-data var vendor
+
+# Créer un script de démarrage avec migrations
+RUN echo '#!/bin/bash\necho "🚀 Démarrage..."\nphp bin/console doctrine:migrations:migrate --no-interaction || true\necho "🌐 Démarrage Apache..."\nexec apache2-foreground' > /start.sh
 RUN chmod +x /start.sh
-
-# Créer les dossiers et donner les permissions à Apache
-RUN mkdir -p var public && chown -R www-data:www-data var vendor public
-
-# Créer les dossiers et donner les permissions à Apache
-RUN mkdir -p var public && chown -R www-data:www-data var vendor public
-
-# Vérifier la structure des dossiers
-RUN ls -la /var/www/html/
 
 # Copier la config Apache personnalisée
 COPY ./docker/apache/vhost.conf /etc/apache2/sites-available/000-default.conf
@@ -54,5 +48,5 @@ RUN a2enmod rewrite
 # Exposer le port Apache par défaut
 EXPOSE 80
 
-# Commande par défaut pour démarrer Apache
-CMD ["apache2-foreground"]
+# Utiliser le script de démarrage avec migrations
+CMD ["/start.sh"]
