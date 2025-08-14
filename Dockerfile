@@ -35,10 +35,14 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 # Créer les dossiers avec les bonnes permissions
 RUN mkdir -p var/cache var/log public && \
     chown -R www-data:www-data var vendor public && \
-    chmod -R 775 var
+    chmod -R 777 var
 
-# Créer un script de démarrage avec migrations
-RUN echo '#!/bin/bash\necho "🚀 Démarrage..."\n# Fixer les permissions\nchown -R www-data:www-data /var/www/html/var/\nchmod -R 775 /var/www/html/var/\n# Migrations\nphp bin/console doctrine:migrations:migrate --no-interaction || true\necho "🌐 Démarrage Apache..."\nexec apache2-foreground' > /start.sh
+# Configuration PHP pour éviter les problèmes de permissions
+RUN echo 'memory_limit = 256M' > /usr/local/etc/php/conf.d/memory.ini
+RUN echo 'opcache.enable_cli=1' > /usr/local/etc/php/conf.d/opcache.ini
+
+# Créer un script de démarrage avec permissions maximales
+RUN echo '#!/bin/bash\necho "🚀 Démarrage..."\necho "🔧 Fix permissions agressif..."\nchmod -R 777 /var/www/html/var/ || true\nchmod -R 777 /tmp/ || true\nmkdir -p /var/www/html/var/cache/prod || true\nchmod -R 777 /var/www/html/var/cache/ || true\necho "📦 Migrations..."\nphp bin/console doctrine:migrations:migrate --no-interaction || true\necho "🗑️ Clear cache..."\nrm -rf /var/www/html/var/cache/* || true\necho "🌐 Démarrage Apache..."\nexec apache2-foreground' > /start.sh
 RUN chmod +x /start.sh
 
 # Copier la config Apache personnalisée
